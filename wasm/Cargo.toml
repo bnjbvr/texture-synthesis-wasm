@@ -13,20 +13,5 @@ crate-type = ["cdylib"]
 texture-synthesis = { version = "0.8.0", path = "../../texture-synthesis/lib" }
 wasm-bindgen = "0.2.68"
 
-[dependencies.image]
-version = "0.23"
-default-features = false
-features = ["jpeg", "png", "bmp"]
-
-[dependencies.web-sys]
-version = "0.3.45"
-features = [
-  'Document',
-  'Element',
-  'HtmlElement',
-  'Node',
-  'Window',
-]
-
 [profile.release]
 lto = true
