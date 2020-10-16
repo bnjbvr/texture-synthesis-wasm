@@ -1,0 +1,32 @@
+[package]
+name = "wasm"
+version = "0.1.0"
+authors = ["Benjamin Bouvier <public@benj.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+texture-synthesis = { version = "0.8.0", path = "../../texture-synthesis/lib" }
+wasm-bindgen = "0.2.68"
+
+[dependencies.image]
+version = "0.23"
+default-features = false
+features = ["jpeg", "png", "bmp"]
+
+[dependencies.web-sys]
+version = "0.3.45"
+features = [
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Window',
+]
+
+[profile.release]
+lto = true
