@@ -36,5 +36,7 @@ onmessage = async function(e) {
     const textureRaw = new Uint8ClampedArray(wasmMemory.buffer, texture.offset(), texture.size());
     const imageData = new ImageData(textureRaw, width, height);
 
+    texture.free();
+
     postMessage({ status: 'done', imageData });
 }
