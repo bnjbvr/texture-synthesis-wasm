@@ -172,8 +172,8 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_signalprogress_d38cb880612cee9b = function(arg0, arg1, arg2, arg3) {
-        signal_progress(arg0 >>> 0, arg1 >>> 0, arg2 >>> 0, arg3 >>> 0);
+    imports.wbg.__wbg_signalprogress_d38cb880612cee9b = function(arg0, arg1, arg2, arg3, arg4) {
+        signal_progress(arg0 >>> 0, arg1 >>> 0, arg2 >>> 0, arg3 >>> 0, ByteStream.__wrap(arg4));
     };
     imports.wbg.__wbg_asynclog_36a3c0503b852970 = function(arg0, arg1) {
         async_log(getStringFromWasm0(arg0, arg1));

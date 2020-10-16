@@ -1,11 +1,17 @@
 importScripts('./assets/wasm.js');
 
-let initialized = false;
+let INITIALIZED = false;
+let WASM_MEMORY = null;
 
-function signal_progress(st_current, st_total, total_current, total_total) {
+let LAST_HEIGHT = null;
+let LAST_WIDTH = null;
+
+function signal_progress(st_current, st_total, total_current, total_total, tmp_image) {
+    let imageData = toImageData(tmp_image, LAST_WIDTH, LAST_HEIGHT);
     postMessage({
         status: 'progress',
-        msg: `stage: ${st_current}/${st_total}, total: ${total_current}/${total_total}`
+        msg: `stage: ${st_current}/${st_total}, total: ${total_current}/${total_total}`,
+        imageData,
     })
 }
 
@@ -15,28 +21,34 @@ function async_log(msg) {
     })
 }
 
+function toImageData(bytestream, width, height) {
+    const u8array = new Uint8ClampedArray(WASM_MEMORY.buffer, bytestream.offset(), bytestream.size());
+    const imageData = new ImageData(u8array, width, height);
+    bytestream.free();
+    return imageData;
+}
+
 const { pub_memory, transfer_style } = wasm_bindgen;
 
 onmessage = async function(e) {
-    if (!initialized) {
-        initialized = true;
+    if (!INITIALIZED) {
+        INITIALIZED = true;
         async_log('initializing wasm...');
         await wasm_bindgen('./assets/wasm_bg.wasm');
+        WASM_MEMORY = pub_memory();
         async_log('done initializing wasm!');
     }
 
     let {styleData, userData, nearest, stage, alpha, height, width} = e.data;
 
+    LAST_HEIGHT = height;
+    LAST_WIDTH = width;
+
     async_log('transfer style!');
-    let texture = transfer_style(styleData, userData, nearest, stage, alpha, height, width);
-    async_log('done transfer style! offset/size', texture.offset(), texture.size());
+    let bytestream = transfer_style(styleData, userData, nearest, stage, alpha, height, width);
+    async_log('done transfer style! offset/size', bytestream.offset(), bytestream.size());
 
-    let wasmMemory = pub_memory();
-
-    const textureRaw = new Uint8ClampedArray(wasmMemory.buffer, texture.offset(), texture.size());
-    const imageData = new ImageData(textureRaw, width, height);
-
-    texture.free();
+    const imageData = toImageData(bytestream, width, height);
 
     postMessage({ status: 'done', imageData });
 }

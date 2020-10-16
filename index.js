@@ -75,10 +75,10 @@ async function takePicture() {
         return;
     }
 
-    var context = inputCanvas.getContext('2d');
+    let inputContext = inputCanvas.getContext('2d');
     inputCanvas.width = width;
     inputCanvas.height = height;
-    context.drawImage(video, 0, 0, width, height);
+    inputContext.drawImage(video, 0, 0, width, height);
 
     log('fetching user data...');
     let userData = new Uint8Array(await canvasToBuffer(inputCanvas));
@@ -110,11 +110,14 @@ async function takePicture() {
         styleData, userData, nearest, stage, alpha, height, width
     });
 
+    let outputContext = outputCanvas.getContext('2d');
+
     worker.onmessage = e => {
         let data = e.data;
         switch (data.status) {
         case 'progress':
           status(data.msg);
+          outputContext.putImageData(data.imageData, 0, 0);
           break;
 
         case 'log':
@@ -123,8 +126,7 @@ async function takePicture() {
 
         case 'done':
           log('creating image data');
-          let context = outputCanvas.getContext('2d');
-          context.putImageData(data.imageData, 0, 0);
+          outputContext.putImageData(data.imageData, 0, 0);
           log('all righty then!');
           break;
         }

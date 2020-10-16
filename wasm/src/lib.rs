@@ -10,6 +10,7 @@ extern "C" {
         stage_total: usize,
         total_current: usize,
         total_total: usize,
+        tmp: ByteStream,
     );
 }
 
@@ -22,6 +23,7 @@ impl ts::GeneratorProgress for ProgressBar {
             info.stage.total,
             info.total.current,
             info.total.total,
+            ByteStream::new(info.image.as_raw()),
         );
     }
 }
