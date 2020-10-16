@@ -28,14 +28,14 @@ function toImageData(bytestream, width, height) {
     return imageData;
 }
 
-const { pub_memory, transfer_style } = wasm_bindgen;
+const { transfer_style } = wasm_bindgen;
 
 onmessage = async function(e) {
     if (!INITIALIZED) {
         INITIALIZED = true;
         async_log('initializing wasm...');
-        await wasm_bindgen('./assets/wasm_bg.wasm');
-        WASM_MEMORY = pub_memory();
+        let { memory } = await wasm_bindgen('./assets/wasm_bg.wasm');
+        WASM_MEMORY = memory;
         async_log('done initializing wasm!');
     }
 

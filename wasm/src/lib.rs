@@ -71,11 +71,6 @@ pub fn transfer_style(
 // All of the following are hacks to be able to pass an array from Rust to JS. Oh my.
 
 #[wasm_bindgen]
-pub fn pub_memory() -> JsValue {
-    wasm_bindgen::memory()
-}
-
-#[wasm_bindgen]
 pub struct ByteStream {
     offset: *const u8,
     size: usize,

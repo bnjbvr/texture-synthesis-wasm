@@ -76,14 +76,6 @@ __exports.transfer_style = function(style, target, nearest_neighbors, stages, al
 };
 
 /**
-* @returns {any}
-*/
-__exports.pub_memory = function() {
-    var ret = wasm.pub_memory();
-    return takeObject(ret);
-};
-
-/**
 */
 class ByteStream {
 
@@ -180,10 +172,6 @@ async function init(input) {
     };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         var ret = getStringFromWasm0(arg0, arg1);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_memory = function() {
-        var ret = wasm.memory;
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {

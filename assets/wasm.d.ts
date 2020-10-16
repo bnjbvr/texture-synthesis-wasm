@@ -12,10 +12,6 @@
 */
 export function transfer_style(style: Uint8Array, target: Uint8Array, nearest_neighbors: number, stages: number, alpha: number, height: number, width: number): ByteStream;
 /**
-* @returns {any}
-*/
-export function pub_memory(): any;
-/**
 */
 export class ByteStream {
   free(): void;
@@ -39,7 +35,6 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly transfer_style: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => number;
-  readonly pub_memory: () => number;
   readonly __wbg_bytestream_free: (a: number) => void;
   readonly bytestream_new: (a: number, b: number) => number;
   readonly bytestream_offset: (a: number) => number;
