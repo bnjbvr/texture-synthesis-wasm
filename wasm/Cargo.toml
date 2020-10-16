@@ -10,7 +10,7 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-texture-synthesis = { version = "0.8.0", path = "../../texture-synthesis/lib" }
+texture-synthesis = { git = "http://github.com/bnjbvr/texture-synthesis", branch = "wasm-progress" }
 wasm-bindgen = "0.2.68"
 
 [profile.release]

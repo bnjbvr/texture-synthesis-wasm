@@ -297,6 +297,7 @@ dependencies = [
 [[package]]
 name = "texture-synthesis"
 version = "0.8.0"
+source = "git+http://github.com/bnjbvr/texture-synthesis?branch=wasm-progress#59188e1d3b3c2d1829b4d3c4aade4e3d79774713"
 dependencies = [
  "crossbeam-utils",
  "image",
