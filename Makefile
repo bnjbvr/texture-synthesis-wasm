@@ -5,3 +5,7 @@ all:
 
 serve:
 	python3 -m http.server
+
+pretty:
+	npx prettier *.js --write
+	(cd wasm && cargo fmt)

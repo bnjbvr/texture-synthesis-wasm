@@ -1,5 +1,4 @@
 /// All of the following are hacks to be able to pass an array from Rust to JS. Oh my.
-
 use wasm_bindgen::prelude::*;
 
 /// Rust Vec encapsulated as its primitive components.

@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use texture_synthesis as ts;
+use wasm_bindgen::prelude::*;
 
 use crate::byte_stream::Bytestream;
 
