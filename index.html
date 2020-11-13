@@ -1,69 +1,132 @@
-<html>
+<!doctype html>
+<html lang="en">
     <head>
-        <style type="text/css">
-            body {
-                margin: 0;
-            }
-
-            #logs {
-                margin-top: 1rem;
-            }
-
-            .row {
-                display: flex;
-                align-items: center;
-                padding: 0;
-                margin-bottom: 1rem;
-            }
-
-            .row * {
-                flex: 1 1;
+        <meta charset="utf-8">
+        <title>WebAssembly style transfer</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.6.3/dist/css/foundation.min.css" integrity="sha256-ogmFxjqiTMnZhxCqVmcqTvjfe1Y/ec4WaRj/aQPvn+I=" crossorigin="anonymous">
+        <style>
+            #example_fixed img {
+                max-width: 200px;
             }
         </style>
     </head>
-
     <body>
-      <p id="status"></p>
+      <div class="grid-container">
+          <div class="grid-x">
+              <h1 class="cell">Wasm style transfer</h1>
 
-      <div class="row">
-          <label for="style">Style model
-              <input type="file" id="style" />
-          </label>
-      </div>
+              <p>
 
-      <div class="row">
-          <video id="video">Video stream not available.</video>
-      </div>
+              <div class="cell grid-x grid-padding-x">
+                  <div class="cell large-6">
+                      <h3>Example</h3>
 
-      <div class="row">
-          <label for="stage">
-              Backtrack stages
-              <input type="number" id="stage" value="5" step="1" min="1" />
-          </label>
+                      <select id="example_select">
+                          <option value="upload">Upload</option>
+                          <option value="fixed">Fixed image</option>
+                      </select>
 
-          <label for="nearest">
-              Nearest neighbors
-              <input type="number" id="nearest" value="50" step="5" min="0" />
-          </label>
+                      <div class="grid-x">
+                          <div id="example_upload">
+                              <label for="example_input">Example
+                                  <input type="file" id="example_input" />
+                              </label>
+                          </div>
 
-          <label for="alpha">
-              Guide alpha
-              <input type="number" id="alpha" value="0.8" step=0.05 min="0" max="1" />
-          </label>
+                          <div id="example_fixed">
+                              <img class="thumbnail" src="assets/night.jpg" />
+                              <img class="thumbnail" src="assets/fire.jpg" />
+                              <img class="thumbnail" src="assets/cri.png" />
+                              <img class="thumbnail" src="assets/water.jpg" />
+                          </div>
+                      </div>
+                  </div>
 
-          <button id="startbutton">Take photo</button>
-      </div>
+                  <div class="cell large-6">
+                      <h3>Target</h3>
 
-      <div class="row">
-          <div>
-              <canvas id="input"></canvas>
+                      <select id="target_select">
+                          <option value="upload">Upload</option>
+                          <option value="cam">Use the cam</option>
+                      </select>
+
+                      <div class="grid-x">
+                          <div id="target_upload">
+                              <label for="target_input">Example
+                                  <input type="file" id="target_input" />
+                              </label>
+                          </div>
+
+                          <div id="target_cam">
+                              <video id="cam">Video stream not available.</video>
+                              <button class="button" id="target_cam_take">Take pic</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <hr class="cell" />
+
+              <div class="grid-x grid-padding-x">
+                  <div class="cell medium-4">
+                      <label for="stage">
+                          Backtrack stages
+                          <input type="number" id="stage" value="3" step="1" min="1" />
+                      </label>
+                  </div>
+
+                  <div class="cell medium-4">
+                      <label for="nearest">
+                          Nearest neighbors
+                          <input type="number" id="nearest" value="50" step="5" min="0" />
+                      </label>
+                  </div>
+
+                  <div class="cell medium-4">
+                      <label for="alpha">
+                          Guide alpha
+                          <input type="number" id="alpha" value="0.9" step=0.01 min="0" max="1" />
+                      </label>
+                  </div>
+
+                  <div class="cell medium-4">
+                      <label for="live_preview">Live preview</label>
+                      <div class="switch">
+                          <input class="switch-input" id="live_preview" type="checkbox">
+                          <label class="switch-paddle" for="live_preview">
+                              <span class="show-for-sr">Live preview</span>
+                          </label>
+                      </div>
+                  </div>
+
+                  <div class="cell">
+                      <button class="button" id="submit">Start the fun</button>
+                  </div>
+              </div>
+
+              <hr class="cell" />
+
+              <div class="grid-x">
+                  <div class="cell medium-6">
+                      <h3>Chosen example</h3>
+                      <canvas id="chosen_example"></canvas>
+                  </div>
+                  <div class="cell medium-6">
+                      <h3>Chosen target</h3>
+                      <canvas id="chosen_target"></canvas>
+                  </div>
+                  <div class="cell">
+                      <h3>Result</h3>
+                      <p class="cell" id="status"></p>
+                      <canvas id="output"></canvas>
+                  </div>
+              </div>
+
+              <hr/>
+
+              <p class="cell" id="logs"></p>
           </div>
-          <div>
-              <canvas id="output"></canvas>
-          </div>
       </div>
-
-      <p id="logs"></p>
 
       <script type="module" src="index.js"></script>
     </body>

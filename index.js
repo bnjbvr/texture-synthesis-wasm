@@ -1,136 +1,286 @@
-let $status = document.getElementById('status');
-function status(msg) {
-    $status.innerHTML = msg;
-}
+// DOM manipulation
+const $ = document.querySelector.bind(document);
 
-let $logs = document.getElementById('logs');
-function log(msg) {
-    console.log(msg);
-    $logs.innerHTML += msg + '<br/>';
-}
-
-let $nearest = document.getElementById('nearest');
-let $stage = document.getElementById('stage');
-let $alpha = document.getElementById('alpha');
-let $style = document.getElementById('style');
-
-var width = 500;
-var height = 0;
-
-let video = null;
-let inputCanvas = null;
-let outputCanvas = null;
-
-let worker = new Worker('./worker.js');
-
-async function startup() {
-    video = document.getElementById('video');
-    inputCanvas = document.getElementById('input');
-    outputCanvas = document.getElementById('output');
-
-    let stream = await navigator.mediaDevices.getUserMedia({video: true, audio: false});
-    video.srcObject = stream;
-    video.play();
-
-    let streaming = false;
-    video.addEventListener('canplay', function(ev) {
-        if (streaming) {
-            return;
+// Utility functions.
+const utils = {
+    status: (function(){
+        let $status = $('#status');
+        return msg => {
+            $status.innerHTML = msg;
         }
+    })(),
 
-        height = video.videoHeight / (video.videoWidth/width);
-
-        // Assume 4/3 ratio if the video height or width are not available.
-        if (isNaN(height)) {
-            height = width / (4/3);
+    log: (function() {
+        let $logs = $('#logs');
+        return (...rest) => {
+            console.log(...rest);
+            $logs.innerHTML += rest.join(' ') + '<br/>';
         }
+    })(),
+};
 
-        video.setAttribute('width', width);
-        video.setAttribute('height', height);
+// Global data.
+class Context {
+    worker = null;
+    form = null;
 
-        inputCanvas.setAttribute('width', width);
-        inputCanvas.setAttribute('height', height);
-
-        outputCanvas.setAttribute('width', width);
-        outputCanvas.setAttribute('height', height);
-    }, false);
-
-    document.getElementById('startbutton').addEventListener('click', function(ev){
-        takePicture();
-        ev.preventDefault();
-    }, false);
-}
-
-function canvasToBuffer(canvas) {
-    return new Promise(resolve => {
-        canvas.toBlob(async blob => {
-            let ab = await blob.arrayBuffer();
-            resolve(ab);
-        });
-    });
-}
-
-async function takePicture() {
-    if (!width || !height) {
-        return;
+    constructor() {
+        this.worker = new Worker('./worker.js');
+        this.worker.onmessage = this.onMessage;
+        this.form = new Form(this.startTransferStyle);
     }
 
-    let inputContext = inputCanvas.getContext('2d');
-    inputCanvas.width = width;
-    inputCanvas.height = height;
-    inputContext.drawImage(video, 0, 0, width, height);
+    async init() {
+        await this.form.init();
+    }
 
-    log('fetching user data...');
-    let userData = new Uint8Array(await canvasToBuffer(inputCanvas));
-    log('done fetching user data!');
+    startTransferStyle = (example, target, params) => {
+        this.worker.postMessage({
+            example, target, params
+        });
+    }
 
-    let nearest = $nearest.value;
-    let stage = $stage.value;
-    let alpha = $alpha.value;
-
-    // This code would handle a fixed image (from a fixed URL).
-    //status('loading image...');
-    //let styleImageRequest = await fetch('signac.jpg');
-    //styleData = new Uint8Array(await styleImageRequest.arrayBuffer());
-    //status('done loading image');
-
-    let reader = new FileReader();
-    let styleData = await (function() {
-        return new Promise(resolve => {
-            reader.onload = e => {
-                let buffer = e.target.result;
-                resolve(new Uint8Array(buffer))
-            };
-            reader.readAsArrayBuffer($style.files[0]);
-        })
-    })();
-    log('loaded style file!');
-
-    worker.postMessage({
-        styleData, userData, nearest, stage, alpha, height, width
-    });
-
-    let outputContext = outputCanvas.getContext('2d');
-
-    worker.onmessage = e => {
-        let data = e.data;
+    onMessage = (msg) => {
+        let data = msg.data;
         switch (data.status) {
-        case 'progress':
-          status(data.msg);
-          outputContext.putImageData(data.imageData, 0, 0);
-          break;
+            case 'progress':
+              utils.status(data.msg);
+              if (data.imageData !== null) {
+                  this.form.renderOutput(data.imageData);
+              }
+              break;
 
-        case 'log':
-          log(data.msg);
-          break;
+            case 'log':
+              utils.log(data.msg);
+              break;
 
-        case 'done':
-          log('creating image data');
-          outputContext.putImageData(data.imageData, 0, 0);
-          log('all righty then!');
-          break;
+            case 'done':
+              utils.log('creating image data');
+              this.form.renderOutput(data.imageData);
+              utils.log('all righty then!');
+              break;
+
+            default:
+              utils.log('unknown message with status: ' + data.status);
+              break;
         }
-    };
+    }
 }
 
-window.addEventListener('load', startup, false);
+class Form {
+    DEFAULT_RATIO = 4/3;
+    width = 500;
+    height = null;
+
+    constructor(startTransferStyle) {
+        this.cam = $('#cam');
+
+        this.exampleSelect = $('#example_select');
+        this.exampleUpload = $('#example_upload');
+        this.exampleInput = $('#example_input');
+        this.exampleFixed = $('#example_fixed');
+
+        this.targetSelect = $('#target_select');
+        this.targetUpload = $('#target_upload');
+        this.targetInput = $('#target_input');
+        this.targetCam = $('#target_cam');
+
+        this.chosenExample = $('#chosen_example');
+        this.chosenTarget = $('#chosen_target');
+
+        this.output = $('#output');
+
+        this.submit = $('#submit');
+
+        this.startTransferStyle = startTransferStyle;
+
+        this.values = {
+            example: null,
+            target: null
+        };
+
+        this.render({
+            exampleShowInput: true,
+            targetShowInput: true,
+        });
+    }
+
+    async init() {
+        let initializedStreaming = false;
+
+        let setSizes = () => {
+            this.cam.width = this.output.width = this.chosenExample.width = this.chosenTarget.width = this.width;
+            this.cam.height = this.output.height = this.chosenExample.height = this.chosenTarget.height = this.height;
+        }
+
+        // Try to start the webcam.
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({video: true, audio: false});
+            this.cam.srcObject = stream;
+            this.cam.play();
+
+            this.cam.addEventListener('canplay', ev => {
+                if (initializedStreaming) {
+                    return;
+                }
+                // Infallible operation.
+                initializedStreaming = true;
+                this.height = this.cam.videoHeight / (this.cam.videoWidth/this.width);
+                // Assume 4/3 ratio if the video height or width are not available.
+                if (isNaN(this.height)) {
+                    this.height = this.width / this.DEFAULT_RATIO;
+                }
+                setSizes();
+            }, false);
+        } catch (exc) {
+            utils.log('error when initializing camera:', exc.message, exc.stack);
+            // Assume default height.
+            this.height = this.width / this.DEFAULT_RATIO;
+            setSizes();
+        }
+
+        // Examples.
+        this.exampleSelect.onchange = ev =>{
+            let exampleShowInput = ev.target.value === 'upload';
+            this.render({
+                exampleShowInput
+            });
+        };
+
+        this.exampleInput.onchange = async () => {
+            await this.fillCanvasFromFileInput(this.exampleInput, this.chosenExample);
+            this.setFormValues({ example: await Form.canvasToUint8Array(this.chosenExample) });
+        };
+
+        for (let img of this.exampleFixed.childNodes) {
+            img.addEventListener('click', async () => {
+                await this.fillCanvasFromImg(img, this.chosenExample);
+                this.setFormValues({ example: await Form.canvasToUint8Array(this.chosenExample) });
+            });
+        }
+
+        // Targets.
+        this.targetSelect.onchange = ev => {
+            let targetShowInput = ev.target.value === 'upload';
+            this.render({
+                targetShowInput
+            });
+        }
+
+        $('#target_cam_take').onclick = async () => {
+            await this.fillCanvasFromCam(this.chosenTarget);
+            this.setFormValues({ target: await Form.canvasToUint8Array(this.chosenTarget) });
+        }
+
+        this.targetInput.onchange = async () => {
+            await this.fillCanvasFromFileInput(this.targetInput, this.chosenTarget);
+            this.setFormValues({ target: await Form.canvasToUint8Array(this.chosenTarget) });
+        };
+
+        // Submit and parameters.
+        this.submit.onclick = async (ev) => {
+            ev.preventDefault();
+
+            if (!initializedStreaming || !this.height) {
+                return;
+            }
+
+            if (!this.values.example || !this.values.target) {
+                alert('missing example or target!');
+                return;
+            }
+
+            let { example, target } = this.values;
+            let params = this.readParameters();
+            this.startTransferStyle(example, target, params);
+        };
+    }
+
+    render({ exampleShowInput, targetShowInput }) {
+        if (typeof exampleShowInput !== 'undefined') {
+            // Show subcomponent.
+            this.exampleUpload.style.display = exampleShowInput ? 'initial' : 'none';
+            this.exampleFixed.style.display = !exampleShowInput ? 'initial' : 'none';
+            // Bidirectional sync: make sure the select current value is
+            // synchronized with the internal state.
+            this.exampleSelect.value = exampleShowInput ? 'upload' : 'fixed';
+            this.exampleUpload.value = '';
+        }
+
+        if (typeof targetShowInput !== 'undefined') {
+            this.targetUpload.style.display = targetShowInput ? 'initial' : 'none';
+            this.targetCam.style.display = !targetShowInput ? 'initial' : 'none';
+
+            this.targetSelect.value = targetShowInput ? 'upload' : 'cam';
+            this.targetUpload.value = '';
+        }
+    }
+
+    setFormValues(update) {
+        this.values = {...this.values, ...update};
+        this.submit.disabled = !this.values.target || !this.values.example;
+    }
+
+    static canvasToUint8Array(canvas) {
+        return new Promise(resolve => {
+            canvas.toBlob(async blob => {
+                let ab = await blob.arrayBuffer();
+                let u8 = new Uint8Array(ab);
+                resolve(u8);
+            });
+        });
+    }
+
+    static resetCanvas(canvas, ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    async fillCanvasFromCam(canvas) {
+        let ctx = canvas.getContext('2d');
+        Form.resetCanvas(canvas, ctx);
+        ctx.drawImage(this.cam, 0, 0, this.width, this.height);
+    }
+
+    async fillCanvasFromImg(img, canvas) {
+        let ctx = canvas.getContext('2d');
+        Form.resetCanvas(canvas, ctx);
+        ctx.drawImage(img, 0, 0, this.width, this.height);
+    }
+
+    async fillCanvasFromFileInput(fileInput, canvas) {
+        return new Promise(resolve => {
+            let ctx = canvas.getContext('2d');
+            Form.resetCanvas(canvas, ctx);
+            let img = new Image();
+            img.onload = async () => {
+                ctx.drawImage(img, 0, 0, this.width, this.height);
+                URL.revokeObjectURL(img.src);
+                resolve();
+            }
+            img.src = URL.createObjectURL(fileInput.files[0]);
+        })
+    }
+
+    readParameters() {
+        let nearest = Number.parseInt($('#nearest').value);
+        let stage = Number.parseInt($('#stage').value);
+        let alpha = Number.parseFloat($('#alpha').value);
+        let livePreview = $('#live_preview').checked;
+        let width = this.width;
+        let height = this.height;
+        return {
+            livePreview, nearest, stage, alpha, width, height
+        }
+    }
+
+    renderOutput(imageData) {
+        this.output.getContext('2d').putImageData(imageData, 0, 0);
+    }
+}
+
+window.addEventListener('load', async () => {
+    const context = new Context();
+    await context.init();
+}, false);
