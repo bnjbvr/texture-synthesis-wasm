@@ -200,7 +200,7 @@ class Form {
     this.submit.onclick = async (ev) => {
       ev.preventDefault();
 
-      if (!initializedStreaming || !this.height) {
+      if (!this.height) {
         return;
       }
 
